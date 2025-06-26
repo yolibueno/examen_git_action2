@@ -36,7 +36,6 @@ jobs:
         run: |
           echo "✅ Iniciando despliegue local..."
 
-          # Ir a la carpeta del docker-compose.yml
           cd docker
 
           echo "🧹 Limpiando despliegue anterior..."
@@ -45,11 +44,11 @@ jobs:
           echo "🏗️ Construyendo y levantando los contenedores..."
           docker-compose -p ${{ env.DOCKER_PROJECT_NAME }} up -d --build
 
-          echo "⏳ Esperando 30 segundos para que la DB se estabilice..."
+          echo "⏳ Esperando 30 segundos para que la DB (si existe) se estabilice..."
           sleep 30
 
-          echo "💾 Inicializando la base de datos con init.sql..."
-          cat ../sql/init.sql | docker exec -i ${{ env.DB_CONTAINER_NAME }} mysql -u${{ env.DB_USER }} -p${{ env.DB_PASSWORD }} ${{ env.DB_NAME }}
+          echo "🚫 No se ejecuta init.sql porque no existe."
+          echo "ℹ️ Puedes agregar la lógica SQL después si lo necesitas."
 
           echo "🔍 Verificando estado de los contenedores..."
           docker-compose -p ${{ env.DOCKER_PROJECT_NAME }} ps

@@ -1,6 +1,6 @@
 name: Deploy Locally with Self-Hosted Runner
 
-on:
+on: 
   push:
     branches: [ "master" ]  # O usa 'main' si es tu rama principal
   workflow_dispatch: # Permite ejecutar el pipeline manualmente

@@ -1,0 +1,60 @@
+name: Deploy Locally with Self-Hosted Runner
+
+on:
+  push:
+    branches: [ "master" ]
+  workflow_dispatch:  # Permite ejecutarlo manualmente desde GitHub
+
+env:
+  DOCKER_PROJECT_NAME: 'ecomapp'
+  APP_CONTAINER_NAME: 'product_app'
+  DB_CONTAINER_NAME: 'mysql-ecommerce-prod'
+  DB_NAME: 'ecommerce_lp2_prod'
+  DB_USER: 'root'
+  DB_PASSWORD: 'admin123'
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy Locally
+    runs-on: self-hosted
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: ☕ Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: ⚙️ Build with Maven
+        run: mvn -B clean package -DskipTests
+
+      - name: 🐳 Deploy with Docker Compose
+        run: |
+          echo "✅ Iniciando despliegue local..."
+
+          # Ir a la carpeta del docker-compose.yml
+          cd docker
+
+          echo "🧹 Limpiando despliegue anterior..."
+          docker-compose -p ${{ env.DOCKER_PROJECT_NAME }} down -v --remove-orphans || echo "⚠️ No había despliegue anterior."
+
+          echo "🏗️ Construyendo y levantando los contenedores..."
+          docker-compose -p ${{ env.DOCKER_PROJECT_NAME }} up -d --build
+
+          echo "⏳ Esperando 30 segundos para que la DB se estabilice..."
+          sleep 30
+
+          echo "💾 Inicializando la base de datos con init.sql..."
+          cat ../sql/init.sql | docker exec -i ${{ env.DB_CONTAINER_NAME }} mysql -u${{ env.DB_USER }} -p${{ env.DB_PASSWORD }} ${{ env.DB_NAME }}
+
+          echo "🔍 Verificando estado de los contenedores..."
+          docker-compose -p ${{ env.DOCKER_PROJECT_NAME }} ps
+
+          echo "📄 Últimos logs de la aplicación:"
+          docker logs --tail 100 ${{ env.APP_CONTAINER_NAME }}
+
+          echo "✅ Despliegue completado exitosamente 🎉"
